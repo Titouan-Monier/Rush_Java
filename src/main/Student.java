@@ -2,21 +2,21 @@ package main;
 
 public class Student {
 
-    int id;
+    private int id;
 
-    String promotion;
+	private String promotion;
 
-    boolean is_delegate;
+    private boolean is_delegate;
 
-    String firstname;
+    private String firstname;
 
-    String lastname;
+    private String lastname;
 
-    String mail;
+    private String mail;
 
-    String phonenumber;
+    private String phonenumber;
 
-    int nbmiss;
+    private int nbmiss;
 
     public Student() {
     }
@@ -96,5 +96,11 @@ public class Student {
     public void setNbmiss(int nbmiss) {
         this.nbmiss = nbmiss;
     }
-
+    
+    @Override
+   	public String toString() {
+   		return "Student [promotion=" + promotion + ", is_delegate=" + is_delegate + ", firstname=" + firstname
+   				+ ", lastname=" + lastname + ", mail=" + mail + ", phonenumber=" + phonenumber + ", nbmiss=" + nbmiss
+   				+ "]";
+   	}
 }

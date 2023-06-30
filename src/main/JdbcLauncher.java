@@ -7,51 +7,55 @@ import java.sql.*;
 
 public class JdbcLauncher {
     private static final String SHOW_TABLES = "show tables";
-
+    //String SQL Query to Create the table student
     private static final String CREATE_TABLE_STUDENT = "create table student(id int not null  auto_increment primary key,"
             + "promotion varchar(255) not null," + "is_delegate boolean not null," + "firstname varchar(255) not null,"
             + "lastname varchar(255) not null," + "mail varchar(255) not null," + "phonenumber varchar(255) not null," + "nbmiss int not null)";
 
     public static void main(String[] args) throws ClassNotFoundException, SQLException, IOException {
         Class.forName("com.mysql.cj.jdbc.Driver");
+        //Establish connection with port 3306 from database "testjava", with the user root and no password
         try (Connection con = DriverManager.getConnection("jdbc:mySQL://localhost:3306/testjava", "root", "")) {
+        	//Create the statement connection
             try (Statement stmt = con.createStatement()) {
-
+            	//initiate boolean studenTabletoRemove
                 boolean studentTableToRemove = false;
                 try (ResultSet resultSet = stmt.executeQuery(SHOW_TABLES)) {
                     while (resultSet.next()) {
                         String tableName = resultSet.getString(1);
                         System.out.println("table name: " + tableName);
 
-                        //vérifie que la table student existe bien
+                        //verify if the table "student" already exist (compare with the java method "equals(String)"
                         if ("student".equals(tableName)) {
                             studentTableToRemove = true;
                             break;
                         }
-                        // sinon on la crée automatiquement
+                        // else we create the table
                         else {
                             studentTableToRemove = false;
                         }
                     }
                 }
-
+                //then if boolean is false we create the table "student"
                 if (!studentTableToRemove) {
                     System.out.println("student table creation");
                     stmt.execute(CREATE_TABLE_STUDENT);
                 }
             }
-            //Fait un premier console Log pour récupérer la commande que l'utilisateur veut executer
+            
+            //First console Log to get the command the user wants to execute 
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.print("Enter the command you want to do (getAll, getById, create, delete, averagemiss) : ");
+            //Propose the CRUD's methods to the user 
+            System.out.print("Enter the command you want to do (getAll, create, delete, averagemiss, sortByFirstname, sortByNbmiss, getPromo) : ");
             String input = reader.readLine();
 
             if(input.equals("create")) {
-                //create the input Student and add his attributs
+                //create the input Student and add his attributes
                 Student studentInput = new Student();
                 addStudentAttributsByInput(reader, studentInput);
                 addStudentInDatabase(con, studentInput);
             }
-            
+            //if the user write any of the equals strings, it applies the following methods using con (connection to the dbb) and reader(to read the user input) 
             if(input.equals("delete")) {
                 deleteStudentInDatabase(con, reader);
 
@@ -62,17 +66,68 @@ public class JdbcLauncher {
             if(input.equals("averagemiss")) {
             	averageMiss(con, reader);
             }
+            if(input.equals("sortByFirstname")) {
+            	sortByFirstname(con,reader);
+            }
+            if(input.equals("getPromo")) {
+            	getPromo(con,reader);
+            }
+            if(input.equals("sortByNbmiss")) {
+            	sortByNbmiss(con,reader);
+            }
         }
 
 
     }
     
+    private static void getPromo(Connection con, BufferedReader reader) throws SQLException, IOException {
+	        System.out.print("Please, Enter the Promotion: ");
+	        //read the entered promotion 
+	        String readPromotion = reader.readLine();
+	        Statement stmt = con.createStatement();
+	        //SQL query that selects all from the student table where the column promotion = the writing promotion the user wrote
+		    String query =  "SELECT * FROM student WHERE promotion = '" + readPromotion + "'" ;
+		    ResultSet resultSet = stmt.executeQuery(query);
+		    //Iteration on each student 
+	        while(resultSet.next()) {
+	        	////Call the constructor Student to get in the attributes then show them in console
+	        	Student studentToDisplay = new Student(resultSet.getString("promotion"),resultSet.getBoolean("is_delegate"),resultSet.getString("firstname"),resultSet.getString("lastname"),resultSet.getString("mail"),resultSet.getString("phonenumber"),resultSet.getInt("nbmiss"));
+	        	System.out.println(studentToDisplay);
+	    }
+    }
+    
+    private static void sortByFirstname(Connection con, BufferedReader reader) throws SQLException, IOException {
+	  	Statement stmt = con.createStatement();
+	  	//SQL query that select all from the table student and sorts by the firstname in ascendant order
+	    String query =  "SELECT * FROM student ORDER BY firstname ASC";
+	    ResultSet resultSet = stmt.executeQuery(query);
+	    while(resultSet.next()) {
+	    	//Call the constructor Student to get in the attributes then show them in console
+	    	Student studentToSort = new Student(resultSet.getString("promotion"),resultSet.getBoolean("is_delegate"),resultSet.getString("firstname"),resultSet.getString("lastname"),resultSet.getString("mail"),resultSet.getString("phonenumber"),resultSet.getInt("nbmiss"));
+        	System.out.println(studentToSort);
+	    }
+    }
+    
+    private static void sortByNbmiss(Connection con, BufferedReader reader) throws SQLException, IOException {
+	  	Statement stmt = con.createStatement();
+	  	//SQL query that sorts the nbmis by descendant order
+	    String query =  "SELECT * FROM student ORDER BY nbmiss DESC";
+	    ResultSet resultSet = stmt.executeQuery(query);
+	    while(resultSet.next()) {
+	    	//Call the constructor Student to get in the attributes then show them in console
+	    	Student studentToSort = new Student(resultSet.getString("promotion"),resultSet.getBoolean("is_delegate"),resultSet.getString("firstname"),resultSet.getString("lastname"),resultSet.getString("mail"),resultSet.getString("phonenumber"),resultSet.getInt("nbmiss"));
+        	System.out.println(studentToSort);
+	    }
+    }
+    
     private static void averageMiss(Connection con, BufferedReader reader) throws SQLException, IOException {
-    	  	Statement stmt4 = con.createStatement();
-    	    String query5 =  "SELECT AVG(nbmiss) AS average_nbmiss FROM student;";
-    	    ResultSet resultSet3 = stmt4.executeQuery(query5);
-    	    if (resultSet3.next()) {
-    	    	double averageNbMiss = resultSet3.getDouble("average_nbmiss");
+    	  	Statement stmt = con.createStatement();
+    	  	//SQL query that calculates the average of nbmiss as the value average_nbmiss from all the student table
+    	    String query =  "SELECT AVG(nbmiss) AS average_nbmiss FROM student;";
+    	    ResultSet resultSet = stmt.executeQuery(query);
+    	    if (resultSet.next()) {
+    	    	//set the double(a float like) value and get it from average_nbmiss 
+    	    	double averageNbMiss = resultSet.getDouble("average_nbmiss");
     	    	System.out.println("The average of missing students is: " + averageNbMiss);
     	    }
     	    
@@ -82,48 +137,49 @@ public class JdbcLauncher {
     private static void deleteStudentInDatabase(Connection con, BufferedReader reader) throws SQLException, IOException {
         Student studentDelete = new Student();
         System.out.print("Enter the firstname: ");
-        String firstname2 = reader.readLine();
-        studentDelete.setFirstname(firstname2);
+        String firstname = reader.readLine();
+        studentDelete.setFirstname(firstname);
 
         System.out.print("Enter the lastname: ");
-        String lastname2 = reader.readLine();
-        studentDelete.setLastname(lastname2);
+        String lastname = reader.readLine();
+        studentDelete.setLastname(lastname);
         
-        Statement stmt4 = con.createStatement();
-        String query2 = "SELECT * FROM student WHERE firstname = '" + firstname2 + "' and lastname = '" + lastname2 + "'";
-        ResultSet resultSet2 = stmt4.executeQuery(query2);
+        Statement stmt1 = con.createStatement();
+        // SQL query that select all data from student where the firstname/lastname = the entered name 
+        String query1 = "SELECT * FROM student WHERE firstname = '" + firstname + "' and lastname = '" + lastname + "'";
+        ResultSet resultSet1 = stmt1.executeQuery(query1);
        
         
-        while (resultSet2.next()) {
-            if (resultSet2.getBoolean("is_delegate")== false) {
-                try (PreparedStatement stmt3 = con.prepareStatement("DELETE FROM student WHERE firstname = ? and lastname = ? ")) {
-                    stmt3.setString(1, studentDelete.getFirstname());
-                    stmt3.setString(2, studentDelete.getLastname());
-                    stmt3.executeUpdate();
+        while (resultSet1.next()) {
+            if (resultSet1.getBoolean("is_delegate")== false) {
+            	//SQL query to delete all from table "student", it's a prepared statement (safer)
+                try (PreparedStatement stmt2 = con.prepareStatement("DELETE FROM student WHERE firstname = ? and lastname = ? ")) {
+                	//add the values to the query
+                    stmt2.setString(1, studentDelete.getFirstname());
+                    stmt2.setString(2, studentDelete.getLastname());
+                    stmt2.executeUpdate();
                     System.out.println(studentDelete.getFirstname() + " " + studentDelete.getLastname() + " has been deleted");
                 }
             } else {
                 System.out.println("You cannot delete a Delegate");
             }
         }
-        
-        
     } 
-
+    
     private static void addStudentInDatabase(Connection con, Student studentInput) throws SQLException {
         Statement stmt = con.createStatement();
         String query = "SELECT * FROM " + "student";
         ResultSet resultSet = stmt.executeQuery(query);
         boolean alreadyExist = false;
         while(resultSet.next()) {
-            //to create a student we verify in all students table if the  firstname and (&&) lastname or (||) mail are equals or not and set the boolean alreadyexist
+            //to create a student we verify in all students table if the  firstname and (&&) lastname or (||) mail are equals or not and set the boolean alreadyExist
             if(resultSet.getString("mail").equals(studentInput.getMail())|| resultSet.getString("firstname").equals(studentInput.getFirstname())&& resultSet.getString("lastname").equals(studentInput.getLastname())){
                 System.out.println("the student has already been register");
                 alreadyExist=true;
             }
         }
         if (alreadyExist==false) {
-
+        	//SQL query that Create a student in database 
             try (PreparedStatement stmt2 = con.prepareStatement("INSERT INTO student"
                     + "(promotion, is_delegate, firstname, lastname, mail, phonenumber, nbmiss)"
                     +" VALUES (?, ?, ?, ?, ?, ?, ?)")) {
@@ -174,6 +230,7 @@ public class JdbcLauncher {
 
     private static void getAllStudents(Connection con) throws SQLException {
         try (Statement stmt = con.createStatement()) {
+        	//SQL query that selects all data from table student, then show them
             try (ResultSet resultSet = stmt.executeQuery("select * from student")) {
                 while (resultSet.next()) {
                     Integer id = resultSet.getInt("id");
